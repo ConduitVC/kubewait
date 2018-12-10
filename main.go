@@ -16,7 +16,7 @@ func main() {
 		Type:           "Pod",
 		LabelSelector:  "",
 		Namespace:      "kube-system",
-		RequiredPhases: []string{v1.PodRunning},
+		RequiredStates: []ResourceState{ResourceReady},
 	}
 	ctx := context.Background()
 	matcher := NewPodMatcher(clientset, description)

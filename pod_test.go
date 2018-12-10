@@ -19,7 +19,7 @@ func TestPodMatcherSinglePod(t *testing.T) {
 		Namespace:      "test-ns",
 		Type:           "Pod",
 		LabelSelector:  "",
-		RequiredPhases: []string{v1.PodRunning},
+		RequiredStates: []ResourceState{ResourceReady},
 	}
 	podlist := &v1.PodList{
 		Items: []v1.Pod{
@@ -30,6 +30,12 @@ func TestPodMatcherSinglePod(t *testing.T) {
 				},
 				Status: v1.PodStatus{
 					Phase: v1.PodPending,
+					Conditions: []v1.PodCondition{
+						v1.PodCondition{
+							Type:   v1.PodReady,
+							Status: v1.ConditionFalse,
+						},
+					},
 				},
 			},
 		},
@@ -37,6 +43,7 @@ func TestPodMatcherSinglePod(t *testing.T) {
 	fake := fakeclientset.NewSimpleClientset()
 	watcher := watch.NewFakeWithChanSize(1, false)
 	fake.PrependReactor("list", "pods", func(action testcore.Action) (bool, runtime.Object, error) {
+		log.Info("returning fake pods")
 		return true, podlist, nil
 	})
 	fake.PrependWatchReactor("pods", testcore.DefaultWatchReactor(watcher, nil))
@@ -53,6 +60,12 @@ func TestPodMatcherSinglePod(t *testing.T) {
 		},
 		Status: v1.PodStatus{
 			Phase: v1.PodRunning,
+			Conditions: []v1.PodCondition{
+				v1.PodCondition{
+					Type:   v1.PodReady,
+					Status: v1.ConditionTrue,
+				},
+			},
 		},
 	})
 
@@ -70,6 +83,80 @@ func TestPodMatcherPodAdded(t *testing.T) {
 		Type:           "Pod",
 		Namespace:      "test-ns",
 		LabelSelector:  "",
-		RequiredPhases: []string{"Succeeded"},
+		RequiredStates: []ResourceState{ResourceReady},
 	}
+	podlist := &v1.PodList{
+		Items: []v1.Pod{
+			v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod-1",
+					Namespace: "test-ns",
+				},
+				Status: v1.PodStatus{
+					Phase: v1.PodRunning,
+					Conditions: []v1.PodCondition{
+						v1.PodCondition{
+							Type:   v1.PodReady,
+							Status: v1.ConditionTrue,
+						},
+					},
+				},
+			},
+		},
+	}
+	fake := fakeclientset.NewSimpleClientset()
+	watcher := watch.NewFakeWithChanSize(1, false)
+	fake.PrependReactor("list", "pods", func(action testcore.Action) (bool, runtime.Object, error) {
+		log.Info("returning fake pods")
+		return true, podlist, nil
+	})
+	fake.PrependWatchReactor("pods", testcore.DefaultWatchReactor(watcher, nil))
+	matcher := NewPodMatcher(fake, description)
+	go matcher.Start(context.Background())
+	// Add a new pod
+	watcher.Add(&v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod-2",
+			Namespace: "test-ns",
+		},
+		Status: v1.PodStatus{
+			Phase: v1.PodPending,
+			Conditions: []v1.PodCondition{
+				v1.PodCondition{
+					Type:   v1.PodReady,
+					Status: v1.ConditionFalse,
+				},
+			},
+		},
+	})
+
+	select {
+	case <-matcher.Done():
+		t.Fatalf("should not succeed when added pod is in Pending phase")
+	default:
+	}
+
+	watcher.Modify(&v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod-2",
+			Namespace: "test-ns",
+		},
+		Status: v1.PodStatus{
+			Phase: v1.PodRunning,
+			Conditions: []v1.PodCondition{
+				v1.PodCondition{
+					Type:   v1.PodReady,
+					Status: v1.ConditionTrue,
+				},
+			},
+		},
+	})
+
+	timeoutDuration, _ := time.ParseDuration("500ms")
+	select {
+	case <-time.After(timeoutDuration):
+		t.Fatalf("matcher did not return after 500ms")
+	case <-matcher.Done():
+	}
+
 }
