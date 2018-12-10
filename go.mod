@@ -1,4 +1,4 @@
-module github.com/ckousik/kubewait
+module github.com/ConduitVC/kubewait
 
 require (
 	cloud.google.com/go v0.34.0 // indirect
