@@ -138,6 +138,10 @@ func getPodResourceState(pod *v1.Pod) ResourceState {
 }
 
 func (p *PodMatcher) match() bool {
+	if len(p.podstate) == 0 {
+		return false
+	}
+
 	for _, currentState := range p.podstate {
 		isRequiredState := false
 		for _, state := range p.description.RequiredStates {
