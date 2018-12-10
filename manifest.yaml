@@ -1,0 +1,28 @@
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubewait-rbac
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: Pod
+metadata:
+    name: kubewait
+    labels:
+        app: kubewait
+spec:
+    restartPolicy: Never
+    containers:
+    - name: kubewait
+      image: kubewait:latest
+      imagePullPolicy: Never
+---
+
