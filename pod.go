@@ -41,7 +41,7 @@ func (p *PodValidator) Validate(ctx context.Context, description StateDescriptio
 	return nil
 }
 
-func NewPodValidator(description StateDescription) Validator {
+func NewPodValidator() Validator {
 	return &PodValidator{}
 }
 

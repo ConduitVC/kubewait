@@ -27,7 +27,10 @@ func wait(ctx context.Context, clientset kubernetes.Interface, descriptions []St
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			matcher.Start(ctx)
+			err := matcher.Start(ctx)
+			if err != nil {
+				panic(err)
+			}
 		}()
 	}
 	wg.Wait()
@@ -36,7 +39,9 @@ func wait(ctx context.Context, clientset kubernetes.Interface, descriptions []St
 func getValidator(clientset kubernetes.Interface, description StateDescription) (Validator, bool) {
 	switch description.Type {
 	case PodResource:
-		return NewPodValidator(description), true
+		return NewPodValidator(), true
+	case JobResource:
+		return NewJobValidator(), true
 	}
 	return nil, false
 }
@@ -45,6 +50,8 @@ func getMatcher(clientset kubernetes.Interface, description StateDescription) (M
 	switch description.Type {
 	case PodResource:
 		return NewPodMatcher(clientset, description), true
+	case JobResource:
+		return NewJobMatcher(clientset, description), true
 	}
 	return nil, false
 }

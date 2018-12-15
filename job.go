@@ -4,6 +4,7 @@ import (
 	"context"
 
 	log "github.com/sirupsen/logrus"
+	funk "github.com/thoas/go-funk"
 	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,6 +20,37 @@ type JobMatcher struct {
 	description StateDescription
 	done        chan bool
 	jobstate    map[string]ResourceState
+}
+
+type JobValidator struct {
+	BaseValidator
+}
+
+func (v *JobValidator) Validate(ctx context.Context, description StateDescription) error {
+	err := v.BaseValidator.Validate(ctx, description)
+	if err != nil {
+		return err
+	}
+	for _, requiredState := range description.RequiredStates {
+		if !funk.Contains(jobPermittedStates, requiredState) {
+			return ErrStateNotValidForResourceType(description, requiredState)
+		}
+	}
+	return nil
+}
+
+func NewJobValidator() Validator {
+	return &JobValidator{}
+}
+
+func NewJobMatcher(clientset kubernetes.Interface, description StateDescription) Matcher {
+	return &JobMatcher{
+		clientset:   clientset,
+		watcher:     nil,
+		description: description,
+		done:        make(chan bool, 1),
+		jobstate:    make(map[string]ResourceState),
+	}
 }
 
 func (m *JobMatcher) Start(ctx context.Context) error {
@@ -100,7 +132,7 @@ func (m *JobMatcher) Start(ctx context.Context) error {
 	return nil
 }
 
-func (m *JobMatcher) Done() chan bool {
+func (m *JobMatcher) Done() <-chan bool {
 	return m.done
 }
 
