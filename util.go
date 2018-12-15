@@ -20,3 +20,22 @@ func GetStateDescriptionsFromEnv(env string) ([]StateDescription, error) {
 	}
 	return descriptions, nil
 }
+
+func MatchStateMap(current map[string]ResourceState, required []ResourceState) bool {
+	if len(current) == 0 {
+		return false
+	}
+	for _, c := range current {
+		isRequiredState := false
+		for _, rs := range required {
+			if rs == c {
+				isRequiredState = true
+				break
+			}
+		}
+		if !isRequiredState {
+			return false
+		}
+	}
+	return true
+}

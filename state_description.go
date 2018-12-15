@@ -22,7 +22,7 @@ const (
 	ResourceSucceeded ResourceState = "Succeeded"
 	ResourceFailed    ResourceState = "Failed"
 	resourceWaiting   ResourceState = "waiting"
-	ResourceCompleted ResourceState = "Completed"
+	ResourceComplete  ResourceState = "Complete"
 	// Running used only for jobs
 	ResourceRunning ResourceState = "Running"
 )
