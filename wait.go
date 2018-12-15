@@ -13,7 +13,7 @@ func wait(ctx context.Context, clientset kubernetes.Interface, descriptions []St
 		if !ok {
 			panic("could not find validator for resource type " + description.Type)
 		}
-		if err := validator.Validate(description); err != nil {
+		if err := validator.Validate(ctx, description); err != nil {
 			panic("description not valid: " + err.Error())
 		}
 	}
@@ -35,7 +35,7 @@ func wait(ctx context.Context, clientset kubernetes.Interface, descriptions []St
 
 func getValidator(clientset kubernetes.Interface, description StateDescription) (Validator, bool) {
 	switch description.Type {
-	case Pod:
+	case PodResource:
 		return NewPodValidator(description), true
 	}
 	return nil, false
@@ -43,7 +43,7 @@ func getValidator(clientset kubernetes.Interface, description StateDescription) 
 
 func getMatcher(clientset kubernetes.Interface, description StateDescription) (Matcher, bool) {
 	switch description.Type {
-	case Pod:
+	case PodResource:
 		return NewPodMatcher(clientset, description), true
 	}
 	return nil, false

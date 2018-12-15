@@ -9,7 +9,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	watch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+
+	funk "github.com/thoas/go-funk"
 )
+
+var podPermittedStates = []ResourceState{ResourceReady, ResourceSucceeded, ResourceFailed}
 
 type PodMatcher struct {
 	clientset   kubernetes.Interface
@@ -19,9 +23,21 @@ type PodMatcher struct {
 	done        chan bool
 }
 
-type PodValidator struct{}
+type PodValidator struct {
+	BaseValidator
+}
 
-func (p *PodValidator) Validate(description StateDescription) error {
+func (p *PodValidator) Validate(ctx context.Context, description StateDescription) error {
+	err := p.BaseValidator.Validate(ctx, description)
+	if err != nil {
+		return err
+	}
+
+	for _, requiredState := range description.RequiredStates {
+		if !funk.Contains(podPermittedStates, requiredState) {
+			return ErrStateNotValidForResourceType(description, requiredState)
+		}
+	}
 	return nil
 }
 

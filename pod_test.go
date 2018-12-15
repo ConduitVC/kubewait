@@ -401,3 +401,39 @@ func TestPodMatcherDeleteRunningPod(t *testing.T) {
 	case <-matcher.Done():
 	}
 }
+
+func TestPodValidator(t *testing.T) {
+	validDescription := StateDescription{
+		Type:           "Pod",
+		Namespace:      "test-ns",
+		LabelSelector:  "",
+		RequiredStates: []ResourceState{ResourceReady, ResourceSucceeded, ResourceFailed},
+	}
+
+	validator := &PodValidator{}
+	if err := validator.Validate(context.Background(), validDescription); err != nil {
+		t.Fatal(err)
+	}
+
+	badDescription := StateDescription{
+		Type:           "Pod",
+		Namespace:      "test-ns",
+		LabelSelector:  "",
+		RequiredStates: []ResourceState{resourceWaiting, ResourceReady, ResourceSucceeded, ResourceFailed},
+	}
+
+	if err := validator.Validate(context.Background(), badDescription); err == nil || err.Error() != ErrWaitingStateReserved(badDescription).Error() {
+		t.Fatalf("validation should fail with: %v , instead it failed with %v", ErrWaitingStateReserved(badDescription), err)
+	}
+
+	emptyRequiredStatesDescription := StateDescription{
+		Type:           "Pod",
+		Namespace:      "test-ns",
+		LabelSelector:  "",
+		RequiredStates: []ResourceState{},
+	}
+
+	if err := validator.Validate(context.Background(), emptyRequiredStatesDescription); err == nil || err.Error() != ErrNoRequiredStates(emptyRequiredStatesDescription).Error() {
+		t.Fatalf("validation should fail with: %v , instead it failed with %v", ErrNoRequiredStates(badDescription), err)
+	}
+}
