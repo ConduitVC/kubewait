@@ -7,7 +7,6 @@ type ResourceType string
 type StateDescription struct {
 	Type           ResourceType    `json:"type"`
 	LabelSelector  string          `json:"labelSelector",omitempty`
-	ResourceName   string          `json:"resourceName",omitempty`
 	RequiredStates []ResourceState `json:"requiredStates"`
 	Namespace      string          `json:"namespace",omitempty`
 }
