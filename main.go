@@ -2,9 +2,20 @@ package main
 
 import (
 	"context"
+	"os"
+
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
+
+const DefaultEnv = "KUBEWAIT"
+
+func init() {
+	if env, _ := os.LookupEnv("ENV"); env == "DEBUG" {
+		log.SetLevel(log.DebugLevel)
+	}
+}
 
 func main() {
 	config, err := rest.InClusterConfig()
@@ -12,13 +23,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	description := &StateDescription{
-		Type:           "Pod",
-		LabelSelector:  "",
-		Namespace:      "kube-system",
-		RequiredStates: []ResourceState{ResourceReady},
+	log.Debugf("loaded kubernetes clientset\n")
+	descriptions, err := GetStateDescriptionsFromEnv(DefaultEnv)
+	if err != nil {
+		panic(err)
 	}
+	log.Debugf("loaded state descriptions: %v\n", descriptions)
 	ctx := context.Background()
-	matcher := NewPodMatcher(clientset, description)
-	matcher.Start(ctx)
+	wait(ctx, clientset, descriptions)
 }

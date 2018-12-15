@@ -5,15 +5,21 @@ import (
 	// "k8s.io/api/core/v1"
 )
 
+type ResourceState string
+type ResourceType string
+
 // Empty cluster state is always matched
 type StateDescription struct {
-	Type           string
-	LabelSelector  string
-	RequiredStates []ResourceState
-	Namespace      string
+	Type           ResourceType    `json:"type"`
+	LabelSelector  string          `json:"labelSelector"`
+	RequiredStates []ResourceState `json:"requiredStates"`
+	Namespace      string          `json:"namespace",omitempty`
 }
 
-type ResourceState string
+const (
+	Pod ResourceType = "Pod"
+	Job ResourceType = "Job"
+)
 
 const (
 	ResourceReady     ResourceState = "Ready"
@@ -28,6 +34,6 @@ type Matcher interface {
 	Stop(context.Context) error
 }
 
-func (StateDescription) ParseString(ctx context.Context, desc string) (*StateDescription, error) {
-	return nil, nil
+type Validator interface {
+	Validate(StateDescription) error
 }

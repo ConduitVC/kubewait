@@ -14,8 +14,12 @@ import (
 	testcore "k8s.io/client-go/testing"
 )
 
+func init() {
+	log.SetLevel(log.DebugLevel)
+}
+
 func TestPodMatcherSinglePod(t *testing.T) {
-	description := &StateDescription{
+	description := StateDescription{
 		Namespace:      "test-ns",
 		Type:           "Pod",
 		LabelSelector:  "",
@@ -79,7 +83,7 @@ func TestPodMatcherSinglePod(t *testing.T) {
 }
 
 func TestPodMatcherPodAdded(t *testing.T) {
-	description := &StateDescription{
+	description := StateDescription{
 		Type:           "Pod",
 		Namespace:      "test-ns",
 		LabelSelector:  "",
@@ -161,7 +165,7 @@ func TestPodMatcherPodAdded(t *testing.T) {
 }
 
 func TestPodMatcherPendingPodDeleted(t *testing.T) {
-	description := &StateDescription{
+	description := StateDescription{
 		Type:           "Pod",
 		Namespace:      "test-ns",
 		LabelSelector:  "",
@@ -236,7 +240,7 @@ func TestPodMatcherPendingPodDeleted(t *testing.T) {
 }
 
 func TestPodMatcherDeleteRunningPod(t *testing.T) {
-	description := &StateDescription{
+	description := StateDescription{
 		Type:           "Pod",
 		Namespace:      "test-ns",
 		LabelSelector:  "",

@@ -13,13 +13,23 @@ import (
 
 type PodMatcher struct {
 	clientset   kubernetes.Interface
-	description *StateDescription
+	description StateDescription
 	podstate    map[string]ResourceState
 	watcher     watch.Interface
 	done        chan bool
 }
 
-func NewPodMatcher(clientset kubernetes.Interface, description *StateDescription) *PodMatcher {
+type PodValidator struct{}
+
+func (p *PodValidator) Validate(description StateDescription) error {
+	return nil
+}
+
+func NewPodValidator(description StateDescription) Validator {
+	return &PodValidator{}
+}
+
+func NewPodMatcher(clientset kubernetes.Interface, description StateDescription) Matcher {
 	return &PodMatcher{
 		clientset:   clientset,
 		description: description,
@@ -35,7 +45,7 @@ func (p *PodMatcher) Start(ctx context.Context) error {
 	log.WithFields(log.Fields{
 		"namespace":     p.description.Namespace,
 		"labelselector": p.description.LabelSelector,
-	}).Info("fetching initial context")
+	}).Debug("fetching initial context")
 
 	pods, err := p.clientset.CoreV1().Pods(p.description.Namespace).List(options)
 	if err != nil {
@@ -47,7 +57,7 @@ func (p *PodMatcher) Start(ctx context.Context) error {
 		log.WithFields(log.Fields{
 			"podName":  pod.Name,
 			"podState": state,
-		}).Info("added to podstate")
+		}).Debug("added to podstate")
 	}
 	p.watcher, err = p.clientset.CoreV1().Pods(p.description.Namespace).Watch(options)
 	if err != nil {
@@ -67,7 +77,7 @@ func (p *PodMatcher) Start(ctx context.Context) error {
 			ctxLogger.WithFields(log.Fields{
 				"podName":  pod.Name,
 				"podState": state,
-			}).Info("added to pod state")
+			}).Debug("added to pod state")
 		case watch.Modified:
 			pod := event.Object.(*v1.Pod)
 			state := getPodResourceState(pod)
@@ -75,7 +85,7 @@ func (p *PodMatcher) Start(ctx context.Context) error {
 			ctxLogger.WithFields(log.Fields{
 				"podName":  pod.Name,
 				"podState": state,
-			}).Info("updated pod state")
+			}).Debug("updated pod state")
 		case watch.Deleted:
 			pod := event.Object.(*v1.Pod)
 			_, ok := p.podstate[pod.Name]
@@ -84,7 +94,7 @@ func (p *PodMatcher) Start(ctx context.Context) error {
 				ctxLogger.WithFields(log.Fields{
 					"podName":  pod.Name,
 					"podPhase": pod.Status.Phase,
-				}).Info("removed from pod state")
+				}).Debug("removed from pod state")
 			}
 		case watch.Error:
 			// TODO: Do something with this error

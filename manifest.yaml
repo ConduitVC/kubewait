@@ -24,5 +24,18 @@ spec:
     - name: kubewait
       image: kubewait:latest
       imagePullPolicy: Never
+      env:
+      - name: KUBEWAIT
+        value: |-
+          [
+            {
+              "type": "Pod",
+              "labelSelector": "",
+              "requiredStates": [ "Ready" ],
+              "namespace": "kube-system"
+            }
+          ]
+      - name: ENV
+        value: "DEBUG"
 ---
 
