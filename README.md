@@ -1,38 +1,119 @@
 # kubewait
 
-## Usage
+Kubewait can be used as an `initContainer` to allow a Pod/Job to wait on another kubernetes (or external, maybe) resource.
+Kubewait takes a list of `StateDescription` objects and waits until the cluster state matches that description.
+`StateDescription` consists of the following fields:
+1. `type: String`: The type of resource to be monitored. It can be `Pod` or `Job`.
+2. `labelSelector: String`: A kubernetes `LabelSelector` for the required resource.
+3. `requiredStates: [ String ]`: Matches if the resource is in one of these states.
+4. `namespace`: Namespace of the resource.
+
+| `type` | allowed values in `requiredStates` |
+|---|---|
+| Pod | `Ready`, `Succeeded`, `Failed`|
+| Job | `Running`, `Completed`, `Failed` |
+
+## Example
+Consider an app which depends on postgres (which needs to be seeded) and redis.
 ```yaml
+---
+# Create a database deployment
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres 
+  labels:
+    app: postgres
+spec:
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+      ...
+---
+# Create a redis deployment
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+spec:
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+      ...
+---
+# Create the seeder job
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: seeder
+  labels:
+    app: seeder
+spec:
+  template:
+    spec:
+      initContainers:
+      # Wait for the database to be ready
+      - name: kubewait
+        image: ckousik/kubewait:latest
+        env:
+        - name: KUBEWAIT
+          value: |-
+            [
+              {
+                "type": "Pod",,
+                "labelSelector": "app=postgres",
+                "requiredStates": [ "Ready" ],
+                "namespace": "default"
+              },
+            ]
+      containers:
+      - name: seeder
+      ....
+---
 apiVersion: v1
 kind: Pod
 metadata:
-    name: kubewait
-    labels:
-        app: kubewait
+  name: myapp
+  labels:
+    app: myapp
 spec:
-    restartPolicy: Never
-    containers:
-    - name: kubewait
-      image: kubewait:latest
-      imagePullPolicy: Never
-      env:
-      - name: KUBEWAIT
-        value: |-
-          [
-            {
-              "type": "Pod",
-              "labelSelector": "app=postgres",
-              "requiredStates": [ "Ready" ],
-              "namespace": "default"
-            },
-            {
-              "type": "Job",
-              "labelSelector": "app=seeder",
-              "requiredStates": ["Completed"],
-              "namespace": "default"
-            }
-          ]
-      - name: ENV
-        value: "DEBUG"
+  restartPolicy: Never
+  initContainers:
+  - name: kubewait
+    image: ckousik/kubewait:latest
+    env:
+    - name: KUBEWAIT
+      value: |-
+        [
+          {
+            "type": "Pod",
+            "labelSelector": "app=redis",
+            "requiredStates": [ "Ready" ],
+            "namespace": "default"
+          },
+          {
+            "type": "Job",
+            "labelSelector": "app=seeder",
+            "requiredStates": ["Completed"],
+            "namespace": "default"
+          }
+        ]
+    - name: ENV
+      value: "DEBUG"
+  containers:
+  - name: myapp
+    ...
 ---
 
 ```
