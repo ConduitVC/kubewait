@@ -101,7 +101,7 @@ func TestPodMatcherPodAdded(t *testing.T) {
 					Conditions: []v1.PodCondition{
 						v1.PodCondition{
 							Type:   v1.PodReady,
-							Status: v1.ConditionTrue,
+							Status: v1.ConditionFalse,
 						},
 					},
 				},
@@ -128,7 +128,7 @@ func TestPodMatcherPodAdded(t *testing.T) {
 			Conditions: []v1.PodCondition{
 				v1.PodCondition{
 					Type:   v1.PodReady,
-					Status: v1.ConditionFalse,
+					Status: v1.ConditionTrue,
 				},
 			},
 		},
@@ -143,6 +143,21 @@ func TestPodMatcherPodAdded(t *testing.T) {
 	watcher.Modify(&v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "pod-2",
+			Namespace: "test-ns",
+		},
+		Status: v1.PodStatus{
+			Phase: v1.PodRunning,
+			Conditions: []v1.PodCondition{
+				v1.PodCondition{
+					Type:   v1.PodReady,
+					Status: v1.ConditionTrue,
+				},
+			},
+		},
+	})
+	watcher.Modify(&v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod-1",
 			Namespace: "test-ns",
 		},
 		Status: v1.PodStatus{
@@ -238,6 +253,8 @@ func TestPodMatcherPendingPodDeleted(t *testing.T) {
 	case <-matcher.Done():
 	}
 }
+
+func TestPodMatcherNoPod(t *testing.T) {}
 
 func TestPodMatcherDeleteRunningPod(t *testing.T) {
 	description := StateDescription{

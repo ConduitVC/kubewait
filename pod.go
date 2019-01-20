@@ -58,11 +58,13 @@ func (p *PodMatcher) Start(ctx context.Context) error {
 	options := metav1.ListOptions{
 		LabelSelector: p.description.LabelSelector,
 	}
-	log.WithFields(log.Fields{
+	logger := log.WithFields(log.Fields{
 		"namespace":     p.description.Namespace,
 		"type":          p.description.Type,
 		"labelselector": p.description.LabelSelector,
-	}).Debug("fetching initial context")
+	})
+
+	logger.Debug("fetching initial context")
 
 	pods, err := p.clientset.CoreV1().Pods(p.description.Namespace).List(options)
 	if err != nil {
@@ -76,6 +78,12 @@ func (p *PodMatcher) Start(ctx context.Context) error {
 			"podName":  pod.Name,
 			"podState": state,
 		}).Debug("added to podstate")
+	}
+
+	logger.Debug("fetched context")
+	if match := MatchStateMap(p.podstate, p.description.RequiredStates); match {
+		logger.Debug("match: ", match)
+		return nil
 	}
 
 	p.watcher, err = p.clientset.CoreV1().Pods(p.description.Namespace).Watch(options)

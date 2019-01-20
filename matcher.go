@@ -7,3 +7,4 @@ type Matcher interface {
 	Done() <-chan bool
 	Stop(context.Context) error
 }
+

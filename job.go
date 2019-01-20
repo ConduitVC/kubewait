@@ -79,6 +79,10 @@ func (m *JobMatcher) Start(ctx context.Context) error {
 		}).Debug("added to jobstate")
 	}
 
+	if MatchStateMap(m.jobstate, m.description.RequiredStates) {
+		return nil
+	}
+
 	m.watcher, err = m.clientset.BatchV1().Jobs(m.description.Namespace).Watch(options)
 	if err != nil {
 		return err

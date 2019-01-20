@@ -22,9 +22,11 @@ func GetStateDescriptionsFromEnv(env string) ([]StateDescription, error) {
 }
 
 func MatchStateMap(current map[string]ResourceState, required []ResourceState) bool {
+	// do not match if no resources are available
 	if len(current) == 0 {
 		return false
 	}
+
 	for _, c := range current {
 		isRequiredState := false
 		for _, rs := range required {
