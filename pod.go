@@ -15,6 +15,7 @@ import (
 
 var podPermittedStates = []ResourceState{ResourceReady, ResourceSucceeded, ResourceFailed}
 
+// PodMatcher
 type PodMatcher struct {
 	clientset   kubernetes.Interface
 	description StateDescription
@@ -23,6 +24,7 @@ type PodMatcher struct {
 	done        chan bool
 }
 
+// PodValidator
 type PodValidator struct {
 	BaseValidator
 }
