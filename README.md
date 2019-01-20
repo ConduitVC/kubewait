@@ -11,7 +11,7 @@ Kubewait takes a list of `StateDescription` objects and waits until the cluster 
 | `type` | allowed values in `requiredStates` |
 |---|---|
 | Pod | `Ready`, `Succeeded`, `Failed`|
-| Job | `Running`, `Completed`, `Failed` |
+| Job | `Running`, `Complete`, `Failed` |
 
 ## Example
 Consider an app which depends on postgres (which needs to be seeded) and redis.
