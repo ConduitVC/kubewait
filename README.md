@@ -13,6 +13,36 @@ Kubewait takes a list of `StateDescription` objects and waits until the cluster 
 | Pod | `Ready`, `Succeeded`, `Failed`|
 | Job | `Running`, `Complete`, `Failed` |
 
+## RBAC
+`kubewait` requires permissions to watch the states of pods/jobs. To grant permissions for kubewait in a single namespace:
+```yaml
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: default
+  name: kubewait
+rules:
+- apiGroups: ["", "batch"] # "" indicates the core API group
+  resources: ["pods", "jobs"]
+  verbs: ["get", "watch", "list"]
+---
+# Every namespace has a service account called default
+
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubewait
+  namespace: example-ns
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: example-ns
+roleRef:
+  kind: Role
+  name: kubewait
+  namespace: example-ns
+```
+
 ## Example
 Consider an app which depends on postgres (which needs to be seeded) and redis.
 ```yaml
